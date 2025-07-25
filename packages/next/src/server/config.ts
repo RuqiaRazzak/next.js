@@ -1401,44 +1401,7 @@ export default async function loadConfig(
     // Clone a new userConfig each time to avoid mutating the original
     const userConfig = cloneObject(loadedConfig) as NextConfig
 
-    // Always validate the config against schema in non minimal mode.
-    // Only validate once in the root Next.js process, not in forked processes.
-    const isRootProcess = typeof process.send !== 'function'
-    if (!process.env.NEXT_MINIMAL && isRootProcess) {
-      // We only validate the config against schema in non minimal mode
-      const { configSchema } =
-        require('./config-schema') as typeof import('./config-schema')
-      const state = configSchema.safeParse(userConfig)
-
-      if (!state.success) {
-        // error message header
-        const messages = [`Invalid ${configFileName} options detected: `]
-
-        const [errorMessages, shouldExit] = normalizeNextConfigZodErrors(
-          state.error
-        )
-        // ident list item
-        for (const error of errorMessages) {
-          messages.push(`    ${error}`)
-        }
-
-        // error message footer
-        messages.push(
-          'See more info here: https://nextjs.org/docs/messages/invalid-next-config'
-        )
-
-        if (shouldExit) {
-          for (const message of messages) {
-            console.error(message)
-          }
-          await flushAndExit(1)
-        } else {
-          for (const message of messages) {
-            curLog.warn(message)
-          }
-        }
-      }
-    }
+    await validateConfigSchema(userConfig, configFileName, curLog.warn)
 
     if (userConfig.target && userConfig.target !== 'server') {
       throw new Error(
@@ -1865,4 +1828,46 @@ function cloneObject(obj: any): any {
   }
 
   return result
+}
+
+async function validateConfigSchema(
+  config: NextConfig,
+  configFileName: string,
+  warn: (message: string) => void
+) {
+  if (!process.env.NEXT_MINIMAL) {
+    // We only validate the config against schema in non minimal mode
+    const { configSchema } =
+      require('./config-schema') as typeof import('./config-schema')
+    const state = configSchema.safeParse(config)
+
+    if (!state.success) {
+      // error message header
+      const messages = [`Invalid ${configFileName} options detected: `]
+
+      const [errorMessages, shouldExit] = normalizeNextConfigZodErrors(
+        state.error
+      )
+      // ident list item
+      for (const error of errorMessages) {
+        messages.push(`    ${error}`)
+      }
+
+      // error message footer
+      messages.push(
+        'See more info here: https://nextjs.org/docs/messages/invalid-next-config'
+      )
+
+      if (shouldExit) {
+        for (const message of messages) {
+          console.error(message)
+        }
+        await flushAndExit(1)
+      } else {
+        for (const message of messages) {
+          warn(message)
+        }
+      }
+    }
+  }
 }
