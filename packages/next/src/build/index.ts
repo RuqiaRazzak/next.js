@@ -3457,9 +3457,6 @@ export default async function build(
                 // for SSG files with i18n the non-prerendered variants are
                 // output with the locale prefixed so don't attempt moving
                 // without the prefix
-                if (!existsSync(orig)) {
-                  return
-                }
                 if ((!i18n || additionalSsgFile) && !isNotFound) {
                   await fs.mkdir(path.dirname(dest), { recursive: true })
                   await fs.rename(orig, dest)
