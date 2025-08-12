@@ -25,7 +25,13 @@ import { actionAsyncStorage } from '../app-render/action-async-storage.external'
 interface CacheLifetime {}
 const CachedParams = new WeakMap<CacheLifetime, Promise<Params>>()
 
+/**
+ * @deprecated import specific root params from `next/root-params` instead.
+ */
 export async function unstable_rootParams(): Promise<Params> {
+  console.warn(
+    '`unstable_rootParams()` is deprecated and will be removed in an upcoming major release. Import specific root params from `next/root-params` instead.'
+  )
   const workStore = workAsyncStorage.getStore()
   if (!workStore) {
     throw new InvariantError('Missing workStore in unstable_rootParams')
